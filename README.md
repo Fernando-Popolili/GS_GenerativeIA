@@ -82,15 +82,11 @@ Ao final foram selecionadas as **10 features** com maior importância consistent
 
 Foram testados três algoritmos com divisão **70% treino / 30% teste** estratificada:
 
-| Modelo | Acurácia | F1-macro |
-|--------|----------|----------|
-| Random Forest | — | — |
-| XGBoost | — | — |
-| LightGBM | — | — |
+Acurácia e F1-macro Média por volta de 89%/90%
 
 O **F1-macro** foi adotado como métrica principal por considerar o desempenho nas três classes igualmente, incluindo a mais crítica — **Alto** — onde uma predição errada representa uma falha grave no sistema de alerta epidemiológico.
 
-**Modelo escolhido para deploy: XGBoost** — melhor equilíbrio entre acurácia e F1-macro, com desempenho consistente nas três classes.
+**Modelo escolhido: XGBoost** — Os três modelos tiveram desempenho praticamente igual (diferença <0,4%). Optei pelo XGBoost por maior familiaridade, velocidade de inferência no Gradio e bom desempenho consistente na classe crítica 'Alto'.
 
 ---
 
