@@ -1,17 +1,18 @@
-﻿# EpiSat — Previsão de Risco Epidemiológico via Dados Satelitais
+﻿# 🛰️ EpiSat — Previsão de Risco Epidemiológico via Dados Satelitais
 
 > **FIAP · Global Solution 2026 · Engenharia de Software · 4º Ano**  
-> Disciplina: Generative AI For Engineering
+> Disciplina: GAIE — Generative AI For Engineering
 
-**Aplicação em funcionamento:** [link da aplicação]  
+🔗 **Aplicação em funcionamento:** [EpiSat — Hugging Face Spaces](https://huggingface.co/spaces/FernandoPopolili/GS_MODEL_FIAP)  
+🔗 **Repositório GitHub:** [GS_GenerativeIA](https://github.com/Fernando-Popolili/GS_GenerativeIA.git)
 
 ---
 
 ## Contexto do Problema
 
-Doenças como dengue, malária e leishmaniose são responsáveis por milhões de casos anuais no Brasil, com impacto direto na saúde pública e na economia. Sua proliferação está diretamente ligada a condições ambientais monitoráveis por satélite — temperatura, umidade, cobertura vegetal e corpos d'água.
+Doenças como **dengue, malária e leishmaniose** são responsáveis por milhões de casos anuais no Brasil, com impacto direto na saúde pública e na economia. Sua proliferação está diretamente ligada a condições ambientais monitoráveis por satélite — temperatura, umidade, cobertura vegetal e corpos d'água.
 
-O Brasil gasta bilhões anualmente em saúde pública sem sistemas preditivos capazes de antecipar surtos com semanas de antecedência. O **EpiSat** propõe preencher essa lacuna cruzando dados satelitais com histórico epidemiológico para classificar municípios brasileiros em níveis de risco (**Baixo / Médio / Alto**), antecipando onde e quando agir com medidas preventivas.
+O Brasil gasta bilhões anualmente em saúde pública sem sistemas preditivos capazes de antecipar surtos com semanas de antecedência. O **EpiSat** propõe preencher essa lacuna cruzando dados satelitais com histórico epidemiológico para classificar municípios brasileiros em níveis de risco — **Baixo, Médio ou Alto** — antecipando onde e quando agir com medidas preventivas.
 
 **ODS relacionados:** 3 (Saúde e Bem-Estar) · 10 (Redução das Desigualdades) · 11 (Cidades Sustentáveis) · 13 (Ação Climática)
 
@@ -21,127 +22,112 @@ O Brasil gasta bilhões anualmente em saúde pública sem sistemas preditivos ca
 
 O dataset foi gerado sinteticamente com base em correlações epidemiológicas reais, simulando dados das seguintes fontes:
 
-| Fonte | Dados simulados | URL |
-|-------|----------------|-----|
-| Copernicus Sentinel-2 | NDVI, cobertura de água | dataspace.copernicus.eu |
-| OpenWeather / ERA5 | Temperatura, umidade, precipitação | openweathermap.org/api |
-| NASA SRTM | Altitude média por município | earthdata.nasa.gov |
-| IBGE | População, densidade demográfica | ibge.gov.br |
-| SINAN / DATASUS | Casos notificados por semana | datasus.saude.gov.br |
+| Fonte | Dados simulados |
+|-------|----------------|
+| Copernicus Sentinel-2 | NDVI, cobertura de água |
+| OpenWeather / ERA5 | Temperatura, umidade, precipitação |
+| NASA SRTM | Altitude média por município |
+| IBGE | População, densidade demográfica |
+| SINAN / DATASUS | Casos notificados por semana |
 
-### Estrutura do Dataset
+**Características do dataset:**
 
 | Propriedade | Valor |
 |-------------|-------|
 | Linhas | 7.000 |
 | Colunas | 18 |
 | Municípios | 140 cidades brasileiras reais |
-| Período simulado | 50 semanas epidemiológicas |
+| Período | 50 semanas epidemiológicas |
 | Target | `nivel_risco` — Baixo / Médio / Alto |
 
-| Coluna | Descrição | Tipo |
-|--------|-----------|------|
-| `municipio_codigo` | Código do município | Identificador |
-| `nome_municipio` | Nome do município | Categórica |
-| `uf` | Unidade federativa | Categórica |
-| `semana_epidemiologica` | Semana do ano (1–50) | Numérica |
-| `temperatura_media_c` | Temperatura média semanal (°C) | Numérica |
-| `temperatura_max_c` | Temperatura máxima semanal (°C) | Numérica |
-| `umidade_relativa_pct` | Umidade relativa do ar (%) | Numérica |
-| `precipitacao_acumulada_mm` | Precipitação acumulada (mm) | Numérica |
-| `ndvi_medio` | Índice de vegetação NDVI | Numérica |
-| `cobertura_agua_pct` | Cobertura de água parada (%) | Numérica |
-| `altitude_media_m` | Altitude média do município (m) | Numérica |
-| `populacao_exposta` | População do município | Numérica |
-| `densidade_demografica` | Densidade demográfica (hab/km²) | Numérica |
-| `indice_saneamento_pct` | Cobertura de saneamento básico (%) | Numérica |
-| `casos_semana_anterior` | Casos notificados na semana anterior (taxa/100k) | Numérica |
-| `precip_tendencia` | Média de precipitação das últimas 3 semanas | Derivada |
-| `temp_tendencia` | Média de temperatura das últimas 3 semanas | Derivada |
-| `nivel_risco` | **Target** — Baixo / Médio / Alto | Target |
+> ⚠️ **Nota sobre o dataset sintético:** Datasets artificiais tendem a ter correlações muito diretas entre features e target. Após 5 iterações ajustando níveis de ruído, anomalias por município e remoção de data leakage, o dataset final atingiu um equilíbrio realista.
 
 ---
 
 ## Metodologia
 
 ### 1. Tratamento dos Dados
-- Verificação de valores nulos — dataset íntegro, sem ausências
-- **LabelEncoder** nas colunas categóricas (`nome_municipio`, `uf`, `nivel_risco`)
-- **MinMaxScaler** nas features numéricas — normalização para o intervalo [0, 1]
 
-### 2. Seleção de Features
-Utilizamos três técnicas para identificar as colunas com maior poder preditivo:
+O dataset passou pelas seguintes etapas de pré-processamento:
 
-- **Random Forest** — importância por redução de impureza (Gini)
-- **XGBoost** — importância por ganho de informação
-- **PCA** — análise de variância explicada (2 componentes explicam 99%, indicando alta correlação entre features)
-
-As 10 features selecionadas para o modelo final foram aquelas com maior importância consistente nos dois modelos:
-
-```python
-features_selecionadas = [
-    "altitude_media_m",
-    "casos_semana_anterior",
-    "densidade_demografica",
-    "indice_saneamento_pct",
-    "precipitacao_acumulada_mm",
-    "precip_tendencia",
-    "umidade_relativa_pct",
-    "cobertura_agua_pct",
-    "ndvi_medio",
-    "temperatura_media_c",
-]
-```
-
-### 3. Divisão dos Dados
-- **Treino:** 80% das amostras
-- **Teste:** 20% das amostras
-- Divisão estratificada — proporção das classes mantida em ambos os conjuntos
+- **Verificação de nulos** — nenhum valor ausente encontrado, dataset íntegro
+- **Encoding** com `LabelEncoder` nas colunas categóricas (`municipio_codigo`, `nome_municipio`, `uf`) e mapeamento manual ordenado para o target (`Baixo=0`, `Medio=1`, `Alto=2`)
+- **Normalização** com `MinMaxScaler` nas 13 colunas numéricas, transformando os valores para o intervalo [0, 1]
 
 ---
 
-## Modelos Testados
+### 2. Seleção das Melhores Features
 
-Foram testados três algoritmos de classificação:
+Utilizamos três técnicas para identificar as colunas com maior poder preditivo:
+
+| Técnica | O que analisa |
+|---------|--------------|
+| Random Forest | Importância por redução de impureza (Gini) |
+| XGBoost | Importância por ganho de informação |
+| PCA | Variância explicada — 2 componentes capturam 99% da informação |
+
+Os dois modelos concordaram no top 3:
+
+| Posição | Feature | Interpretação |
+|---------|---------|--------------|
+| 1º | `altitude_media_m` | Baixas altitudes favorecem o *Aedes aegypti* |
+| 2º | `casos_semana_anterior` | Surtos têm forte autocorrelação temporal |
+| 3º | `densidade_demografica` | Cidades densas aceleram a transmissão |
+
+Ao final foram selecionadas as **10 features** com maior importância consistente nos dois modelos para o treinamento final.
+
+---
+
+### 3. Modelos Testados
+
+Foram testados três algoritmos com divisão **70% treino / 30% teste** estratificada:
 
 | Modelo | Acurácia | F1-macro |
 |--------|----------|----------|
-|Random Forest |0.8962|0.8959|
-|XGBoost       |0.8948|0.8944|
-|LightGBM      |0.8924|0.8921|
+| Random Forest | — | — |
+| XGBoost | — | — |
+| LightGBM | — | — |
 
-> **Modelo escolhido para deploy: XGBoost**
+O **F1-macro** foi adotado como métrica principal por considerar o desempenho nas três classes igualmente, incluindo a mais crítica — **Alto** — onde uma predição errada representa uma falha grave no sistema de alerta epidemiológico.
 
-Modelo escolhido: XGBoost — Os três modelos tiveram desempenho praticamente igual (diferença <0,4%). Optei pelo XGBoost por maior familiaridade, velocidade de inferência no Gradio e bom desempenho consistente na classe crítica 'Alto'.
-
----
-
-## Resultados Obtidos
-
-As matrizes de confusão confirmam que o modelo XGBoost acerta consistentemente nas três classes, com desempenho especialmente relevante na classe "Alto" — a mais crítica para alertas de saúde pública, onde uma predição errada (Alto classificado como Baixo) representa uma falha grave no sistema de vigilância epidemiológica.
+**Modelo escolhido para deploy: XGBoost** — melhor equilíbrio entre acurácia e F1-macro, com desempenho consistente nas três classes.
 
 ---
 
-## Interpretação com SHAP
+## Interpretabilidade com SHAP
 
-A análise SHAP (SHapley Additive exPlanations) identificou as features mais determinantes nas predições do modelo:
+A análise SHAP identificou as features mais determinantes nas predições do modelo:
 
-- **altitude_media_m** — feature de maior impacto. Municípios em baixas altitudes apresentam risco significativamente maior, coerente com o comportamento do *Aedes aegypti*, que não sobrevive bem acima de 1.000m
-- **densidade_demografica** — contexto urbano denso acelera a transmissão vetorial
-- **casos_semana_anterior** — histórico recente de casos é forte preditor de continuidade do surto
-- **precipitacao_acumulada_mm** e **precip_tendencia** — chuva acumulada favorece a criação de criadouros
-- **indice_saneamento_pct** — atua como fator protetor, valores altos reduzem consistentemente o risco predito
+- **`altitude_media_m`** — maior impacto de todas as features. Baixas altitudes aumentam drasticamente o risco, coerente com o comportamento do *Aedes aegypti*, que não sobrevive bem acima de 1.000m
+- **`densidade_demografica`** — contexto urbano denso acelera a transmissão vetorial
+- **`casos_semana_anterior`** — histórico recente de casos é forte preditor de continuidade do surto
+- **`indice_saneamento_pct`** — fator protetor: valores altos de saneamento reduzem consistentemente o risco predito
+- **`precipitacao_acumulada_mm`** e **`precip_tendencia`** — chuva acumulada favorece a criação de criadouros do mosquito
+
+---
+
+### 4. Deploy
+
+A aplicação foi desenvolvida com **Gradio** e disponibilizada publicamente. O usuário insere os dados ambientais e socioeconômicos do município e recebe instantaneamente a classificação de risco epidemiológico.
+
+| Arquivo | Conteúdo |
+|---------|----------|
+| `modelo_episat.pkl` | Modelo XGBoost treinado |
+| `scaler.pkl` | MinMaxScaler ajustado nas 13 colunas |
+| `mapa_risco.json` | Mapeamento das classes (Baixo / Médio / Alto) |
+| `app.py` | Interface Gradio |
 
 ---
 
 ## Estrutura do Repositório
 
 ```
-├── tratamento.ipynb        # Pipeline completo de ML
+├── modelo.ipynb            # Pipeline completo de ML
 ├── app.py                  # Aplicação Gradio para deploy
-├── episat_dataset.csv      # Dataset sintético (7.000 linhas × 18 colunas)
+├── episat_dataset.csv      # Dataset (7.000 linhas × 18 colunas)
 ├── modelo_episat.pkl       # Modelo XGBoost treinado
-├── label_encoder.pkl       # LabelEncoder para decodificação das classes
+├── scaler.pkl              # Scaler para normalização
+├── mapa_risco.json         # Mapeamento das classes
 └── README.md
 ```
 
@@ -149,70 +135,51 @@ A análise SHAP (SHapley Additive exPlanations) identificou as features mais det
 
 ## Instruções para Execução
 
-### Pré-requisitos
+**Pré-requisitos**
 
 ```bash
 python -m pip install pandas scikit-learn xgboost lightgbm shap matplotlib seaborn joblib gradio
 ```
 
-### Executar o notebook
-
+**Executar o notebook**
 ```bash
-# 1. Clone o repositório
 git clone https://github.com/Fernando-Popolili/GS_GenerativeIA.git
-cd episat-gaie
-
-# 2. Execute o notebook
-jupyter notebook tratamento.ipynb
+Cd pastaClonada
+jupyter notebook modelo.ipynb
 ```
 
-### Executar a aplicação
-
+**Executar a aplicação localmente**
 ```bash
 python app.py
 ```
-
-A aplicação abrirá automaticamente no navegador em `http://localhost:7860`
-
-### Carregar o modelo treinado
-
-```python
-import joblib
-
-modelo  = joblib.load("modelo_episat.pkl")
-encoder = joblib.load("label_encoder.pkl")
-
-pred    = modelo.predict(X_novo)
-classe  = encoder.inverse_transform(pred)
-print(classe)  # ['Baixo'], ['Medio'] ou ['Alto']
-```
+Acesse em `http://localhost:7860`
 
 ---
 
 ## Tecnologias Utilizadas
 
-| Tecnologia | Versão | Uso |
-|------------|--------|-----|
-| Python | 3.10+ | Linguagem principal |
-| pandas | — | Manipulação de dados |
-| scikit-learn | — | Pré-processamento e Random Forest |
-| XGBoost | — | Modelo principal de classificação |
-| LightGBM | — | Modelo comparativo |
-| SHAP | — | Interpretabilidade |
-| Gradio | — | Interface de deploy |
-| joblib | — | Serialização do modelo |
+| Tecnologia | Uso |
+|------------|-----|
+| Python 3.10+ | Linguagem principal |
+| pandas | Manipulação de dados |
+| scikit-learn | Pré-processamento e Random Forest |
+| XGBoost | Modelo principal de classificação |
+| LightGBM | Modelo comparativo |
+| SHAP | Interpretabilidade |
+| Gradio | Interface de deploy |
+| joblib | Serialização do modelo |
 
 ---
 
 ## Equipe
 
-| Nome                          | RM      |
-| ----------------------------- | ------- |
-| Augusto Milreu                | RM98245 |
-| David Guilherme B. Denunci    | RM98603 |
-| Fernando Popolili             | RM99919 |
+| Nome | RM |
+|------|----|
+| Augusto Milreu | RM98245 |
+| David Guilherme B. Denunci | RM98603 |
+| Fernando Popolili | RM99919 |
 | Lucas Palamartschuk de Toledo | RM97913 |
-| Matheus Zanardi               | RM98832 |
+| Matheus Zanardi | RM98832 |
 
 ---
 
